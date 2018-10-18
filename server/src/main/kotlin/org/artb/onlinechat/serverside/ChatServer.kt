@@ -10,9 +10,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
-class Server(val port: Int) {
+class ChatServer(val port: Int) {
     companion object {
-        private val logger = LoggerFactory.getLogger(Server::class.java)
+        private val logger = LoggerFactory.getLogger(ChatServer::class.java)
     }
 
     private val handlers = ConcurrentHashMap<UUID, ClientHandler>()

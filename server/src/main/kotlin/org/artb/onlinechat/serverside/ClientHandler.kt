@@ -7,7 +7,7 @@ import java.util.UUID
 import java.net.Socket
 import java.io.IOException
 
-class ClientHandler(val clientId: UUID, val server: Server, val clientSocket: Socket) : Thread() {
+class ClientHandler(val clientId: UUID, val server: ChatServer, val clientSocket: Socket) : Thread() {
     companion object {
         private val logger = LoggerFactory.getLogger(ClientHandler::class.java)
     }
@@ -30,9 +30,8 @@ class ClientHandler(val clientId: UUID, val server: Server, val clientSocket: So
                     break
                 }
 
-                val msgWithClient = "$clientId: $msg"
-                logger.info(msgWithClient)
-                server.broadcastMessage(msgWithClient)
+                logger.info(msg)
+                server.broadcastMessage(msg)
             }
         } catch (e: IOException) {
             logger.error("Cannot interact with $clientId", e)

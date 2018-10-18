@@ -12,7 +12,7 @@
     <artifactId>client</artifactId>
 
     <properties>
-        <main.class>org.artb.onlinechat.clientside.Client</main.class>
+        <main.class>org.artb.onlinechat.clientside.ClientRunner</main.class>
     </properties>
 
     <dependencies>
@@ -31,6 +31,10 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.artb.onlinechat</groupId>
+            <artifactId>common</artifactId>
         </dependency>
     </dependencies>
 
