@@ -1,6 +1,5 @@
 package org.artb.onlinechat.clientside
 
-import org.artb.onlinechat.common.Settings
 import org.slf4j.LoggerFactory
 import java.io.DataInputStream
 import java.io.DataOutputStream
@@ -11,26 +10,30 @@ import java.io.IOException
 import java.time.LocalDateTime
 
 
-class ChatClient {
+class ChatClient(val serverIp: String, val serverPort: Int) {
     companion object {
         private val logger = LoggerFactory.getLogger(ChatClient::class.java)
     }
 
+    @Volatile
+    private var running = false
+
     fun start() {
         val scanner = Scanner(System.`in`)
 
-        Socket(InetAddress.getByName("127.0.0.1"), Settings.SERVER_PORT).use {
-            logger.info("Established connection to ${it.remoteSocketAddress}")
+        println("Please, enter your name:")
+        val name = scanner.nextLine()
+
+        Socket(InetAddress.getByName(serverIp), serverPort).use {
+            logger.info("Established connection to $serverIp:$serverPort")
+            running = true
 
             val output = DataOutputStream(it.getOutputStream())
             val input = DataInputStream(it.getInputStream())
 
-            println("Please, enter your name:")
-            val name = scanner.nextLine()
-
             val receivedMessagesListener = Thread {
                 try {
-                    while (true) {
+                    while (running) {
                         val msg = input.readUTF()
                         val now = LocalDateTime.now().withNano(0)
                         println("[${now.toString().replace('T', ' ')}] $msg")
@@ -42,7 +45,7 @@ class ChatClient {
 
             receivedMessagesListener.start()
 
-            while (true) {
+            while (running) {
                 val msgToSend = scanner.nextLine()
                 output.writeUTF("$name: $msgToSend")
 

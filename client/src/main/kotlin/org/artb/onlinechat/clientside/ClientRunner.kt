@@ -1,6 +1,6 @@
 package org.artb.onlinechat.clientside
 
-import org.artb.onlinechat.common.Settings
+import org.artb.onlinechat.common.ServerSettings
 import org.slf4j.LoggerFactory
 
 object ClientRunner {
@@ -9,12 +9,13 @@ object ClientRunner {
     private val logger = LoggerFactory.getLogger(javaClass)
 
     @JvmStatic
-    fun main(args: Array<String>) {
+    fun main(cliArgs: Array<String>) {
+        val args = ServerSettings.parseArguments(cliArgs)
         try {
-            val server = ChatClient()
-            server.start()
+            val client = ChatClient(args.address, args.port)
+            client.start()
         } catch (e: Exception) {
-            logger.error("Cannot start a server on port ${Settings.SERVER_PORT}", e)
+            logger.error("Cannot start a server on ${args.address}:${args.port}", e)
         }
     }
 }

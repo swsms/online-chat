@@ -2,6 +2,7 @@ package org.artb.onlinechat.serverside
 
 import org.slf4j.LoggerFactory
 import java.io.IOException
+import java.net.InetAddress
 import java.net.Socket
 import java.net.ServerSocket
 import java.util.UUID
@@ -10,7 +11,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
-class ChatServer(val port: Int) {
+class ChatServer(val ip: String, val port: Int) {
     companion object {
         private val logger = LoggerFactory.getLogger(ChatServer::class.java)
     }
@@ -18,17 +19,32 @@ class ChatServer(val port: Int) {
     private val handlers = ConcurrentHashMap<UUID, ClientHandler>()
     private val lock = ReentrantReadWriteLock()
 
+    @Volatile
+    private var running = false
+
     fun start() {
-        ServerSocket(port).use {
-            logger.info("The chat server has been successfully started on port $port")
-            while (true) {
+        ServerSocket(port, 50, InetAddress.getByName(ip)).use {
+            running = true
+            logger.info("The chat server has been successfully started on $ip:$port")
+            while (running) {
                 logger.info("Waiting for a new client")
-                regNewClient(it.accept())
+                registerNewClient(it.accept())
             }
         }
     }
 
-    fun regNewClient(client: Socket) {
+    fun stop() {
+        running = false
+        handlers.forEach { clientId, clientHandler ->
+            try {
+                clientHandler.disconnect()
+            } catch (e: Exception) {
+                logger.error("Cannot disconnect $clientId from server", e)
+            }
+        }
+    }
+
+    private fun registerNewClient(client: Socket) {
         val clientId = UUID.randomUUID()
         logger.info("New client $clientId is coming")
         lock.write {
@@ -42,13 +58,14 @@ class ChatServer(val port: Int) {
         }
     }
 
-    fun broadcastMessage(msg: String) {
+    fun broadcastMessage(msg: String, handler: ClientHandler) {
         lock.read {
             handlers.forEach { clientId, clientHandler ->
                 try {
                     clientHandler.sendMsg(msg)
-                } catch (e: IOException) {
+                } catch (e: Exception) {
                     logger.error("Cannot send msg to $clientId", e)
+                    handler.disconnect()
                 }
             }
         }

@@ -15,11 +15,14 @@ class ClientHandler(val clientId: UUID, val server: ChatServer, val clientSocket
     private val input = DataInputStream(clientSocket.getInputStream())
     private val output = DataOutputStream(clientSocket.getOutputStream())
 
+    @Volatile
+    private var running = false
+
     override fun run() {
         try {
-            server.broadcastMessage("Client $clientId is ready to chatting")
-
-            while (true) {
+            server.broadcastMessage("Client $clientId is ready to chatting", this)
+            running = true
+            while (running) {
                 if (clientSocket.isClosed) {
                     break
                 }
@@ -31,7 +34,7 @@ class ClientHandler(val clientId: UUID, val server: ChatServer, val clientSocket
                 }
 
                 logger.info(msg)
-                server.broadcastMessage(msg)
+                server.broadcastMessage(msg, this)
             }
         } catch (e: IOException) {
             logger.error("Cannot interact with $clientId", e)
@@ -46,14 +49,11 @@ class ClientHandler(val clientId: UUID, val server: ChatServer, val clientSocket
         output.flush()
     }
 
-    private fun disconnect() {
-        try {
-            clientSocket.close()
-            input.close()
-            output.close()
-        } catch (e: IOException) {
-            logger.error("Cannot disconnect $clientId", e)
-        }
-        server.broadcastMessage(String.format("$clientId disconnected from the server\n"))
+    @Throws(IOException::class)
+    fun disconnect() {
+        running = false
+        clientSocket.close()
+        input.close()
+        output.close()
     }
 }
