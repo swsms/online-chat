@@ -44,12 +44,12 @@ class ChatServer(val ip: String, val port: Int) {
         }
     }
 
-    private fun registerNewClient(client: Socket) {
+    fun registerNewClient(client: Socket) {
         val clientId = UUID.randomUUID()
         logger.info("New client $clientId is coming")
         lock.write {
             try {
-                val handler = ClientHandler(UUID.randomUUID(), this, client)
+                val handler = ClientHandler(clientId, this, client)
                 handler.start()
                 handlers[clientId] = handler
             } catch (e: IOException) {
@@ -58,14 +58,21 @@ class ChatServer(val ip: String, val port: Int) {
         }
     }
 
-    fun broadcastMessage(msg: String, handler: ClientHandler) {
+    fun unregisterClient(clientId: UUID) {
+        lock.write {
+            val unreg = handlers.remove(clientId)
+            logger.info("Unregistered client $unreg")
+        }
+    }
+
+    fun broadcastMessage(msg: String) {
         lock.read {
+            logger.info("$handlers")
             handlers.forEach { clientId, clientHandler ->
                 try {
                     clientHandler.sendMsg(msg)
                 } catch (e: Exception) {
                     logger.error("Cannot send msg to $clientId", e)
-                    handler.disconnect()
                 }
             }
         }

@@ -20,7 +20,7 @@ class ClientHandler(val clientId: UUID, val server: ChatServer, val clientSocket
 
     override fun run() {
         try {
-            server.broadcastMessage("Client $clientId is ready to chatting", this)
+            server.broadcastMessage("Client $clientId is ready to chatting")
             running = true
             while (running) {
                 if (clientSocket.isClosed) {
@@ -29,18 +29,17 @@ class ClientHandler(val clientId: UUID, val server: ChatServer, val clientSocket
 
                 val msg = input.readUTF()
                 if (msg.trim { it <= ' ' }.equals("/exit", ignoreCase = true)) {
-                    disconnect()
                     break
                 }
 
                 logger.info(msg)
-                server.broadcastMessage(msg, this)
+                server.broadcastMessage(msg)
             }
         } catch (e: IOException) {
             logger.error("Cannot interact with $clientId", e)
+        } finally {
             disconnect()
         }
-
     }
 
     @Throws(IOException::class)
@@ -52,6 +51,7 @@ class ClientHandler(val clientId: UUID, val server: ChatServer, val clientSocket
     @Throws(IOException::class)
     fun disconnect() {
         running = false
+        server.unregisterClient(clientId)
         clientSocket.close()
         input.close()
         output.close()
