@@ -12,6 +12,7 @@ import java.time.LocalDateTime
 
 class ChatClient(val serverIp: String, val serverPort: Int) {
     companion object {
+        @JvmStatic
         private val logger = LoggerFactory.getLogger(ChatClient::class.java)
     }
 

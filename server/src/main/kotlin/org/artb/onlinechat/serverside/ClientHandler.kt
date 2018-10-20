@@ -9,6 +9,7 @@ import java.io.IOException
 
 class ClientHandler(val clientId: UUID, val server: ChatServer, val clientSocket: Socket) : Thread() {
     companion object {
+        @JvmStatic
         private val logger = LoggerFactory.getLogger(ClientHandler::class.java)
     }
 
@@ -38,7 +39,7 @@ class ClientHandler(val clientId: UUID, val server: ChatServer, val clientSocket
         } catch (e: IOException) {
             logger.error("Cannot interact with $clientId", e)
         } finally {
-            disconnect()
+            server.unregisterClient(clientId)
         }
     }
 
@@ -51,7 +52,6 @@ class ClientHandler(val clientId: UUID, val server: ChatServer, val clientSocket
     @Throws(IOException::class)
     fun disconnect() {
         running = false
-        server.unregisterClient(clientId)
         clientSocket.close()
         input.close()
         output.close()

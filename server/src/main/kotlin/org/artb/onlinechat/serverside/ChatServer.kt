@@ -13,7 +13,9 @@ import kotlin.concurrent.write
 
 class ChatServer(val ip: String, val port: Int) {
     companion object {
+        @JvmStatic
         private val logger = LoggerFactory.getLogger(ChatServer::class.java)
+        private const val MAX_LEN_OF_QUEUE = 50
     }
 
     private val handlers = ConcurrentHashMap<UUID, ClientHandler>()
@@ -23,7 +25,7 @@ class ChatServer(val ip: String, val port: Int) {
     private var running = false
 
     fun start() {
-        ServerSocket(port, 50, InetAddress.getByName(ip)).use {
+        ServerSocket(port, MAX_LEN_OF_QUEUE, InetAddress.getByName(ip)).use {
             running = true
             logger.info("The chat server has been successfully started on $ip:$port")
             while (running) {
@@ -37,7 +39,7 @@ class ChatServer(val ip: String, val port: Int) {
         running = false
         handlers.forEach { clientId, clientHandler ->
             try {
-                clientHandler.disconnect()
+                unregisterClient(clientHandler.clientId)
             } catch (e: Exception) {
                 logger.error("Cannot disconnect $clientId from server", e)
             }
@@ -60,14 +62,14 @@ class ChatServer(val ip: String, val port: Int) {
 
     fun unregisterClient(clientId: UUID) {
         lock.write {
-            val unreg = handlers.remove(clientId)
-            logger.info("Unregistered client $unreg")
+            val client = handlers.remove(clientId)
+            client?.disconnect()
+            logger.info("Unregistered client $client")
         }
     }
 
     fun broadcastMessage(msg: String) {
         lock.read {
-            logger.info("$handlers")
             handlers.forEach { clientId, clientHandler ->
                 try {
                     clientHandler.sendMsg(msg)
